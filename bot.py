@@ -80,48 +80,26 @@ def evaluate_board(board: Board) -> int:
     return white_point_value + possible_moves_value
 
 
-# takes a board where it is blacks's turn and considers the legal moves. then returns the move with the highest score and the associated score.
-def consider_black_moves(board: Board, depth: int, alpha: int, beta: int) -> tuple[Move, int]:
+# takes a board considers the legal moves. then returns the move with the highest score and the associated score.
+def consider_moves(board: Board, depth: int, alpha: int, beta: int) -> tuple[Move, int]:
     if depth == 0:
         # final iteration
         return [None, evaluate_board(board)]
 
-    best_move = [None, math.inf]
+    is_white = board.is_white_turn()
+    best_move = [None, -math.inf if is_white else math.inf]
 
     for move in get_moves(board):
         board.make_move(move)
-        _, score = consider_white_moves(board, depth-1, alpha, beta)
+        _, score = consider_moves(board, depth-1, alpha, beta)
         board.undo_move()
 
-        if score < best_move[1]:
+        if (is_white and score > best_move[1]) or (not is_white and score < best_move[1]):
             best_move = [move, score]
-            if beta > score:
-                beta = score
-                if alpha >= beta:
-                    break
-
-    return best_move
-
-
-# takes a board where it is white's turn and considers the legal moves. then returns the move with the highest score and the associated score.
-def consider_white_moves(board: Board, depth: int, alpha: int, beta: int) -> tuple[Move, int]:
-    if depth == 0:
-        # final iteration
-        return [None, evaluate_board(board)]
-
-    best_move = [None, -math.inf]
-
-    for move in get_moves(board):
-        board.make_move(move)
-        _, score = consider_black_moves(board, depth-1, alpha, beta)
-        board.undo_move()
-
-        if score > best_move[1]:
-            best_move = [move, score]
-            if alpha < score:
-                alpha = score
-                if alpha >= beta:
-                    break
+            alpha = max(alpha, score) if is_white else alpha
+            beta = min(beta, score) if not is_white else beta
+        if alpha >= beta:
+            break
 
     return best_move
 
@@ -132,10 +110,7 @@ while True:
     # get all legal moves for the position
 
     # evaluate moves
-    if board.is_white_turn():
-        chosen_move, _ = consider_white_moves(board, SEARCH_DEPTH, -math.inf, math.inf)
-    else:
-        chosen_move, _ = consider_black_moves(board, SEARCH_DEPTH, -math.inf, math.inf)
+    chosen_move, _ = consider_moves(board, SEARCH_DEPTH, -math.inf, math.inf)
 
     if chosen_move == None:
         with open("./log.txt", "w") as l:
