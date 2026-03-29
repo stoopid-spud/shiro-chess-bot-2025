@@ -6,7 +6,7 @@ import math
 import sys
 from random import shuffle, choice
 
-POINTS_VALUE, POSSIBLE_MOVES_VALUE = 80, 20 # points and position adds to 100. The bot will weigh the position with these.
+POINTS_VALUE, POSSIBLE_MOVES_VALUE = 80, 5 # points and position adds to 100. The bot will weigh the position with these.
 
 SEARCH_DEPTH = 4 # number of moves to search for (each played piece is a move so 1 white play and 1 black play is counted as 2)
 THROWAWAY_THRESHOLD = -10 # point threshhold at which to throw away the board
@@ -33,7 +33,7 @@ def move_heuristic(move: Move, board: Board):
 
 def get_moves(board: Board):
     moves = board.get_legal_moves()
-    # moves.sort(key=lambda move: move_heuristic(move, board), reverse=board.is_black_turn())
+    # moves.sort(key=lambda move: move_heuristic(move, board))
     shuffle(moves)
     return moves
 
@@ -52,7 +52,7 @@ def get_white_point_value(white_piece_value: int, black_piece_value: int):
 
 
 def get_possible_moves_value(possible_moves: int):
-    factor = 0.5
+    factor = 0.2
 
     return max(min(possible_moves * factor, POSSIBLE_MOVES_VALUE), -POSSIBLE_MOVES_VALUE) # limit it POINTS_VALUE
 
@@ -62,8 +62,8 @@ def get_possible_moves_value(possible_moves: int):
 def evaluate_board(board: Board) -> int:
     if board.in_checkmate():
         if board.is_white_turn():
-            return -1000 # white is checkmated
-        return 1000
+            return -math.inf # white is checkmated
+        return math.inf
 
     white_piece_value = sum(value * sum(1 for _ in get_positions_from_bitboard(board.get_bitboard(PlayerColor.WHITE, piece))) for piece, value in PIECE_VALUES.items())
 
@@ -76,6 +76,7 @@ def evaluate_board(board: Board) -> int:
     else:
         board.skip_turn()
         possible_moves_value = -get_possible_moves_value(len(board.get_legal_moves()))
+        board.undo_move()
         
     return white_point_value + possible_moves_value
 
